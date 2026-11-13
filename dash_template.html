@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Customer Retention Dashboard – MIT 8339</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mute:#667085;--line:#e4e7ec;--blue:#2f5d9e;--red:#c8442f;--amber:#d9962b;--green:#3b8a6a}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{padding:18px 28px 10px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px}
+h1{font-size:21px;margin:0}h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--mute);margin-top:3px}
+.tabs button{border:1px solid var(--line);background:#fff;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--mute)}
+.tabs button:first-child{border-radius:8px 0 0 8px}.tabs button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.tabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.filters{display:flex;gap:14px;flex-wrap:wrap;padding:0 28px 12px;align-items:end}
+.filters label{font-size:11px;color:var(--mute);display:flex;flex-direction:column;gap:3px;text-transform:uppercase;letter-spacing:.04em}
+.filters select{font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;min-width:140px}
+.filters button{font-size:12px;padding:7px 12px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer}
+main{padding:0 28px 28px}.page{display:none}.page.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .l{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:26px;font-weight:650;margin-top:4px}
+.kpi.hot .v{color:var(--red)}.kpi .s{font-size:11px;color:var(--mute);margin-top:2px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.grid.three{grid-template-columns:repeat(3,1fr)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px 6px}
+.panel h3{font-size:13.5px;margin:0 0 2px}.panel p{font-size:11.5px;color:var(--mute);margin:0 0 4px;line-height:1.35}
+.chart{height:290px}.chart.tall{height:340px}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}th{color:var(--mute);font-weight:600;font-size:11px;text-transform:uppercase}
+.pill{padding:2px 8px;border-radius:10px;color:#fff;font-size:11px}
+.note{font-size:11px;color:var(--mute);padding:10px 28px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.grid,.grid.three{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Customer Retention &amp; Performance Intelligence<small>Credit-card portfolio · 10,127 customers · Blossom Idigbo · 2025/B/MIT/0906</small></h1>
+<div class="tabs"><button id="t1" class="on" onclick="show(1)">1 · Executive overview</button><button id="t2" onclick="show(2)">2 · Retention analysis</button></div></header>
+<div class="filters">
+<label>Card category<select id="f_card"></select></label>
+<label>Income category<select id="f_inc"></select></label>
+<label>Age band<select id="f_age"></select></label>
+<label>Gender<select id="f_gen"></select></label>
+<label>Risk band<select id="f_risk"></select></label>
+<button onclick="resetF()">Reset filters</button></div>
+<main>
+<section id="p1" class="page on">
+ <div class="kpis" id="kpis"></div>
+ <div class="grid">
+  <div class="panel"><h3>Attrition rate by retention-risk band</h3><p>Rule-based score (see report). Bars show % of customers who left; dashed line is the filtered portfolio average.</p><div id="c_risk" class="chart"></div></div>
+  <div class="panel"><h3>Share of customers vs share of attrition, by risk band</h3><p>Shows how concentrated losses are: a small High-risk group accounts for most attrition.</p><div id="c_share" class="chart"></div></div>
+  <div class="panel"><h3>Attrition rate by income category</h3><p>Ordered income bands; "Unknown" kept as its own category.</p><div id="c_inc" class="chart"></div></div>
+  <div class="panel"><h3>Attrition rate by card category</h3><p>Premium tiers have very few customers (n shown) – read with caution.</p><div id="c_card" class="chart"></div></div>
+ </div>
+</section>
+<section id="p2" class="page">
+ <div class="grid three">
+  <div class="panel"><h3>Attrition by transaction frequency</h3><p>Transactions in last 12 months.</p><div id="c_txn" class="chart"></div></div>
+  <div class="panel"><h3>Attrition by card utilisation</h3><p>Revolving balance ÷ credit limit.</p><div id="c_util" class="chart"></div></div>
+  <div class="panel"><h3>Attrition by number of products held</h3><p>Total relationship count.</p><div id="c_rel" class="chart"></div></div>
+ </div>
+ <div class="grid" style="margin-top:14px">
+  <div class="panel"><h3>Attrition by service contacts (12 months)</h3><p>Number of times the customer contacted the bank.</p><div id="c_con" class="chart"></div></div>
+  <div class="panel"><h3>Heatmap: products held × transaction frequency</h3><p>Attrition rate (%). Cells with fewer than 20 customers are blank.</p><div id="c_heat" class="chart"></div></div>
+  <div class="panel"><h3>Transactions: count vs value (sample)</h3><p>Each dot is a customer (max 1,500 shown). Leavers cluster at low counts.</p><div id="c_sc" class="chart tall"></div></div>
+  <div class="panel"><h3>Priority retention list – highest-risk customers</h3><p>Top 12 in current filter by risk score, then transaction value.</p><div id="tbl" style="height:340px;overflow:auto"></div></div>
+ </div>
+</section>
+</main>
+<div class="note">Source: Goyal (2020), Credit Card Customers, Kaggle. Risk score is an in-sample rule-based indicator for prioritisation, not a prediction of any individual's behaviour. Dollar values as supplied in the dataset.</div>
+<script>/*PLOTLYJS*/</script>
+<script>
+const D=/*DATA*/;const N=D.Attrited.length;
+const INC=["Less than $40K","$40K - $60K","$60K - $80K","$80K - $120K","$120K +","Unknown"];
+const AGE=["<30","30-39","40-49","50-59","60+"],RISK=["Low","Medium","High"],CARD=["Blue","Silver","Gold","Platinum"];
+const TXN=["Very low (≤40)","Low (41-60)","Medium (61-80)","High (>80)"],UT=["Very low (<5%)","Low (5-30%)","Medium (30-60%)","High (>60%)"];
+const C={blue:"#2f5d9e",red:"#c8442f",amber:"#d9962b",green:"#3b8a6a",grey:"#8a94a6"};
+const F={card:"f_card",inc:"f_inc",age:"f_age",gen:"f_gen",risk:"f_risk"};
+function fill(id,label,vals){const s=document.getElementById(id);s.innerHTML='<option value="">All</option>'+vals.map(v=>`<option>${v}</option>`).join('');s.onchange=render}
+fill("f_card","",CARD);fill("f_inc","",INC);fill("f_age","",AGE);fill("f_gen","",["Female","Male"]);fill("f_risk","",RISK);
+function resetF(){Object.values(F).forEach(i=>document.getElementById(i).value="");render()}
+function idx(){const v=k=>document.getElementById(F[k]).value;const a=[];
+ for(let i=0;i<N;i++){if((!v('card')||D.Card_Category[i]==v('card'))&&(!v('inc')||D.Income_Category[i]==v('inc'))&&(!v('age')||D.Age_Band[i]==v('age'))&&(!v('gen')||D.Gender[i]==v('gen'))&&(!v('risk')||D.Risk_Band[i]==v('risk')))a.push(i)}return a}
+const L={margin:{l:44,r:10,t:8,b:62},paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:{family:"Inter,Segoe UI,Arial",size:11,color:"#1c2430"},yaxis:{ticksuffix:"%",gridcolor:"#eceff3",zeroline:false,rangemode:"tozero"},xaxis:{tickangle:0},showlegend:false};
+const cfg={displayModeBar:false,responsive:true};
+function grp(I,f,order){const m={};order.forEach(o=>m[o]={n:0,a:0});I.forEach(i=>{const k=D[f][i];if(m[k]){m[k].n++;m[k].a+=D.Attrited[i]}});return order.map(o=>({k:o,n:m[o].n,r:m[o].n?100*m[o].a/m[o].n:null,a:m[o].a}))}
+function bar(div,G,avg,color){const x=G.map(g=>g.k+"<br>n="+g.n.toLocaleString());const y=G.map(g=>g.r==null?null:+g.r.toFixed(1));
+ const col=color||G.map(()=>C.blue);
+ Plotly.react(div,[{type:"bar",x,y,marker:{color:col},text:y.map(v=>v==null?"":v.toFixed(1)+"%"),textposition:"outside",cliponaxis:false,hovertemplate:"%{x}<br>Attrition %{y}%<extra></extra>"}],
+ {...L,yaxis:{...L.yaxis,range:[0,Math.min(112,Math.max(10,...y.filter(v=>v!=null))*1.2)]},shapes:[{type:"line",xref:"paper",x0:0,x1:1,y0:avg,y1:avg,line:{dash:"dot",color:C.grey,width:1.5}}]},cfg)}
+function numOrder(f,vals){return vals}
+function render(){const I=idx();const n=I.length;const att=I.reduce((s,i)=>s+D.Attrited[i],0);const avg=n?100*att/n:0;
+ const m=f=>n?I.reduce((s,i)=>s+D[f][i],0)/n:0;
+ const act=n?100*I.filter(i=>D.Months_Inactive_12_mon[i]<=2).length/n:0;
+ const K=[["Customers",n.toLocaleString(),"in current filter"],["Attrition rate",avg.toFixed(1)+"%",att.toLocaleString()+" customers lost","hot"],["Active customer ratio",act.toFixed(1)+"%","≤2 inactive months"],
+ ["Avg credit limit","$"+Math.round(m("Credit_Limit")).toLocaleString(),""],["Avg utilisation",(100*m("Avg_Utilization_Ratio")).toFixed(1)+"%","revolving ÷ limit"],["Avg products held",m("Total_Relationship_Count").toFixed(2),"relationship count"]];
+ document.getElementById("kpis").innerHTML=K.map(k=>`<div class="kpi ${k[3]||''}"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
+ const R=grp(I,"Risk_Band",RISK);bar("c_risk",R,avg,[C.green,C.amber,C.red]);
+ const tot=att||1;Plotly.react("c_share",[{type:"bar",name:"% of customers",x:RISK,y:R.map(g=>n?+(100*g.n/n).toFixed(1):0),marker:{color:C.grey},text:R.map(g=>n?(100*g.n/n).toFixed(0)+"%":""),textposition:"outside"},
+  {type:"bar",name:"% of all attrition",x:RISK,y:R.map(g=>+(100*g.a/tot).toFixed(1)),marker:{color:C.red},text:R.map(g=>(100*g.a/tot).toFixed(0)+"%"),textposition:"outside"}],
+  {...L,barmode:"group",showlegend:true,legend:{orientation:"h",y:-0.18},yaxis:{...L.yaxis,range:[0,110]}},cfg);
+ bar("c_inc",grp(I,"Income_Category",INC),avg);bar("c_card",grp(I,"Card_Category",CARD),avg);
+ bar("c_txn",grp(I,"Txn_Frequency_Category",TXN),avg);bar("c_util",grp(I,"Utilisation_Category",UT),avg);
+ bar("c_rel",grp(I,"Total_Relationship_Count",[1,2,3,4,5,6]).map(g=>({...g,k:g.k+" product"+(g.k>1?"s":"")})),avg);
+ bar("c_con",grp(I,"Contacts_Count_12_mon",[0,1,2,3,4,5,6]),avg);
+ // heatmap
+ const z=[1,2,3,4,5,6].map(r=>TXN.map(t=>{let a=0,c=0;I.forEach(i=>{if(D.Total_Relationship_Count[i]==r&&D.Txn_Frequency_Category[i]==t){c++;a+=D.Attrited[i]}});return c>=20?+(100*a/c).toFixed(1):null}));
+ Plotly.react("c_heat",[{type:"heatmap",z,x:TXN,y:[1,2,3,4,5,6].map(r=>r+" product"+(r>1?"s":"")),colorscale:[[0,"#f3f6fb"],[.5,"#e9a98f"],[1,"#a32c1a"]],zmin:0,zmax:60,text:z.map(r=>r.map(v=>v==null?"":v.toFixed(0)+"%")),texttemplate:"%{text}",hovertemplate:"%{y} · %{x}<br>Attrition %{z}%<extra></extra>",colorbar:{ticksuffix:"%",thickness:10}}],
+  {...L,margin:{l:70,r:10,t:8,b:50},yaxis:{autorange:"reversed"},xaxis:{tickangle:0}},cfg);
+ // scatter
+ const step=Math.max(1,Math.floor(n/1500));const S=I.filter((_,j)=>j%step==0);
+ const tr=(v,name,col)=>{const s=S.filter(i=>D.Attrited[i]==v);return {type:"scattergl",mode:"markers",name,x:s.map(i=>D.Total_Trans_Ct[i]),y:s.map(i=>D.Total_Trans_Amt[i]),marker:{size:4,color:col,opacity:.55},hovertemplate:"Count %{x}<br>Amount $%{y}<extra>"+name+"</extra>"}};
+ Plotly.react("c_sc",[tr(0,"Existing",C.blue),tr(1,"Attrited",C.red)],{...L,showlegend:true,legend:{orientation:"h",y:-0.2},xaxis:{title:"Transactions (12 months)",gridcolor:"#eceff3"},yaxis:{title:"Transaction amount ($)",gridcolor:"#eceff3"},margin:{l:56,r:10,t:8,b:56}},cfg);
+ // table
+ const T=I.filter(i=>D.Attrited[i]==0).sort((a,b)=>D.Risk_Score[b]-D.Risk_Score[a]||D.Total_Trans_Amt[b]-D.Total_Trans_Amt[a]).slice(0,12);
+ const pc={Low:C.green,Medium:C.amber,High:C.red};
+ document.getElementById("tbl").innerHTML="<table><tr><th>Client no.</th><th>Score</th><th>Band</th><th>Txns</th><th>Amount</th><th>Products</th></tr>"+T.map(i=>`<tr><td>${D.CLIENTNUM[i]}</td><td>${D.Risk_Score[i]}</td><td><span class="pill" style="background:${pc[D.Risk_Band[i]]}">${D.Risk_Band[i]}</span></td><td>${D.Total_Trans_Ct[i]}</td><td>$${D.Total_Trans_Amt[i].toLocaleString()}</td><td>${D.Total_Relationship_Count[i]}</td></tr>`).join('')+"</table><p style='margin-top:6px'>Existing customers only – these are the accounts a retention team can still act on.</p>";
+}
+function show(p){[1,2].forEach(k=>{document.getElementById("p"+k).classList.toggle("on",k==p);document.getElementById("t"+k).classList.toggle("on",k==p)});render();window.dispatchEvent(new Event("resize"))}
+render();
+</script></body></html>
