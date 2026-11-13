@@ -2,10 +2,6 @@
 
 **Customer Retention and Performance Intelligence for a Nigerian Commercial Bank**
 
-- **Student:** Blossom Idigbo
-- **Matric number:** 2025/B/MIT/0906
-- **School email:** b.idigbo1616@miva.edu.ng
-- **Course:** MIT 8339, Miva Open University, 2026/2027 session
 
 This repository holds the supporting files for my single-PDF submission.
 
